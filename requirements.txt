@@ -1,0 +1,14 @@
+alpaca-py>=0.20
+jquants-api-client>=0.1
+duckdb>=0.10
+pandas>=2.0
+numpy>=1.26
+plotly>=5.0
+rich>=13.0
+typer>=0.12
+python-dotenv>=1.0
+# ML (optional — only needed for supervised/rl_ppo strategies)
+xgboost>=2.0
+stable-baselines3>=2.0
+gymnasium>=0.29
+torch>=2.0

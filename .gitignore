@@ -1,0 +1,25 @@
+# ── Secrets — NEVER commit ───────────────────────────────────────────────
+.env
+.env.local
+
+# ── Private data — keep holdings & portfolio OFF GitHub ──────────────────
+# (market.duckdb holds the personal holdings table; portfolio.html is the
+#  encrypted asset report. Both stay local only.)
+data/market.duckdb
+data/portfolio.html
+data/candidates.html
+data/auto_rank.log
+data/*.log
+
+# ── Python ───────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+venv/
+
+# ── OS ───────────────────────────────────────────────────────────────────
+.DS_Store
+
+# NOTE: data/rankings.duckdb and docs/index.html ARE committed
+# (public market rankings — safe to publish, needed for the cloud job).

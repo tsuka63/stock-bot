@@ -1,0 +1,22 @@
+[project]
+name = "stock-bot"
+version = "0.1.0"
+description = "US equity backtesting bot — Alpaca data, technical strategies"
+requires-python = ">=3.10"
+dependencies = [
+    "alpaca-py>=0.20",
+    "duckdb>=0.10",
+    "pandas>=2.0",
+    "numpy>=1.26",
+    "plotly>=5.0",
+    "rich>=13.0",
+    "typer>=0.12",
+    "python-dotenv>=1.0",
+]
+
+[project.scripts]
+stock-bot = "bot.cli:app"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.backends.legacy:build"

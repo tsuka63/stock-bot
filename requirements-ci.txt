@@ -1,0 +1,10 @@
+# Lean dependencies for the GitHub Actions cloud job (rankings + screening).
+# No Alpaca / J-Quants / ML — the cloud job only scrapes Yahoo and uses yfinance.
+duckdb>=0.10
+pandas>=2.0
+numpy>=1.26
+requests>=2.31
+yfinance>=0.2
+rich>=13.0
+typer>=0.12
+python-dotenv>=1.0

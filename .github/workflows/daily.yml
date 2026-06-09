@@ -1,0 +1,47 @@
+name: Daily ranking
+
+# Runs on GitHub's servers — your Mac does NOT need to be on.
+on:
+  schedule:
+    # 07:00 UTC = 16:00 JST, weekdays (after the Tokyo market close).
+    # GitHub may delay scheduled runs by a few minutes under load.
+    - cron: "0 7 * * 1-5"
+  workflow_dispatch: {}   # adds a manual "Run workflow" button
+
+permissions:
+  contents: write          # allow committing the updated data + report back
+
+concurrency:
+  group: daily-ranking
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements-ci.txt
+
+      - name: Run daily ranking + screening
+        run: python scripts/cloud_run.py
+
+      - name: Commit updated data and report
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/rankings.duckdb docs/index.html
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Daily ranking update ($(TZ=Asia/Tokyo date +%Y-%m-%d))"
+            git push
+          fi
