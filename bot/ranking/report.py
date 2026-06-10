@@ -8,7 +8,7 @@ dependencies, so it opens straight in any browser.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from html import escape
 
 import pandas as pd
@@ -154,9 +154,13 @@ def render_candidates_html(
     screen_df: pd.DataFrame | None = None,
 ) -> str:
     """Build the full HTML document string for the candidate table."""
-    generated = datetime.now().strftime("%Y-%m-%d %H:%M")
+    # Always report in JST — GitHub's runners are UTC, which would otherwise
+    # show the wrong day/time to a Japanese user.
+    jst       = timezone(timedelta(hours=9))
+    generated = datetime.now(jst).strftime("%Y-%m-%d %H:%M")
+    latest    = history_dates[0] if history_dates else "—"
     span = (
-        f"{history_dates[-1]} 〜 {history_dates[0]}（{len(history_dates)}日分）"
+        f"{history_dates[-1]} 〜 {latest}（{len(history_dates)}日分）"
         if history_dates else "データなし"
     )
 
@@ -227,7 +231,7 @@ def render_candidates_html(
 </head>
 <body>
   <h1>📈 株ランキング候補</h1>
-  <div class="meta">生成: {generated} ／ 対象: {span} ／ 条件: 上位{top_n}位・{min_days}日以上</div>
+  <div class="meta">🕒 最終更新: {generated}（JST） ／ データ対象: {span} ／ 条件: 上位{top_n}位・{min_days}日以上</div>
   <table id="t">
     <thead><tr>
       <th data-i="0">コード</th>
