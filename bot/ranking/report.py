@@ -91,12 +91,35 @@ def _sparkline(equity, split: int, color: str, w: int = 180, h: int = 44, pad: i
     )
 
 
+def _today_cell(r) -> tuple[str, int]:
+    """Fresh buy/sell signals fired today across the strategies."""
+    bt = int(r.get("buy_today", 0) or 0)
+    st = int(r.get("sell_today", 0) or 0)
+    if bt > 0 and bt >= st:
+        return f'<span class="up">🟢 買い {bt}</span>', bt
+    if st > 0:
+        return f'<span class="down">🔴 売り {st}</span>', -st
+    return '<span class="flat">—</span>', 0
+
+
+def _gauge_cell(r) -> tuple[str, int]:
+    """How many strategies are currently holding a long position."""
+    lc  = int(r.get("long_count", 0) or 0)
+    tot = int(r.get("strat_total", 0) or 0)
+    if tot == 0:
+        return '<span class="flat">—</span>', 0
+    cls = "up" if lc / tot >= 0.5 else "flat"
+    return f'<span class="{cls}">{lc}/{tot}</span>', lc
+
+
 def _render_screen_section(screen_df: pd.DataFrame) -> str:
     """Strategy-screening table: per candidate, the strategy that holds up OOS."""
     if screen_df is None or screen_df.empty:
         return ""
 
     has_equity = "equity" in screen_df.columns
+
+    has_consensus = "buy_today" in screen_df.columns
 
     rows = []
     for _, r in screen_df.iterrows():
@@ -106,10 +129,21 @@ def _render_screen_section(screen_df: pd.DataFrame) -> str:
             color = _HOLD_COLOR.get(hold, "#8a93a2")
             spark = _sparkline(r.get("equity"), int(r.get("split", 0) or 0), color)
             chart_cell = f"<td>{spark}</td>"
+
+        signal_cells = ""
+        if has_consensus:
+            today_html, today_sort = _today_cell(r)
+            gauge_html, gauge_sort = _gauge_cell(r)
+            signal_cells = (
+                f'<td data-sort="{today_sort}">{today_html}</td>'
+                f'<td data-sort="{gauge_sort}">{gauge_html}</td>'
+            )
+
         rows.append(
             "<tr>"
             f'<td class="code">{escape(str(r["symbol"]))}</td>'
             f'<td class="name">{escape(str(r["best_strategy"]))}</td>'
+            f'{signal_cells}'
             f'<td data-sort="{r["is_sharpe"]}">{_fmt_sharpe(r["is_sharpe"])}</td>'
             f'<td data-sort="{r["oos_sharpe"] if not pd.isna(r["oos_sharpe"]) else -99}">'
             f'{_fmt_sharpe(r["oos_sharpe"])}</td>'
@@ -120,23 +154,30 @@ def _render_screen_section(screen_df: pd.DataFrame) -> str:
             "</tr>"
         )
     body = "\n".join(rows)
+    signal_header = (
+        '<th data-i="2">今日のシグナル</th><th data-i="3">勢い</th>'
+        if has_consensus else ""
+    )
     chart_header = '<th>資産曲線 (IS／OOS)</th>' if has_equity else ""
     return f"""
   <h2>🧪 戦略スクリーニング（OOS検証付き）</h2>
   <div class="meta">各候補で<b>最もアウトオブサンプル(OOS)で通用した</b>戦略を表示。
     OOS Sharpe順。過学習(✗)は額面通り受け取らないこと。<br>
-    資産曲線: <span style="color:#8a93a2">グレー=IS(過去70%)</span> ／
-    <span style="color:#34d399">色=OOS(直近30%)</span> ／ 点線=分割点。
-    分割点の後ろが上向きなら本物。</div>
+    <b>今日のシグナル</b>: 7戦略のうち本日<span style="color:#34d399">買い</span>/
+    <span style="color:#f87171">売り</span>を出した数。
+    <b>勢い</b>: 今ロング(買い持ち)状態の戦略数。多いほど上昇基調の合意。<br>
+    資産曲線: <span style="color:#8a93a2">グレー=IS</span> ／
+    <span style="color:#34d399">色=OOS</span> ／ 点線=分割点。後ろが上向きなら本物。</div>
   <table id="s">
     <thead><tr>
       <th data-i="0">コード</th>
       <th data-i="1">最良戦略</th>
-      <th data-i="2">Sharpe(IS)</th>
-      <th data-i="3">Sharpe(OOS) ▼</th>
-      <th data-i="4">判定</th>
-      <th data-i="5">リターン(IS)</th>
-      <th data-i="6">取引</th>
+      {signal_header}
+      <th data-i="4">Sharpe(IS)</th>
+      <th data-i="5">Sharpe(OOS) ▼</th>
+      <th data-i="6">判定</th>
+      <th data-i="7">リターン(IS)</th>
+      <th data-i="8">取引</th>
       {chart_header}
     </tr></thead>
     <tbody>

@@ -39,6 +39,48 @@ def _hold_flag(is_sharpe: float, oos_sharpe: float) -> str:
     return "·"
 
 
+def consensus_signal(df) -> dict:
+    """
+    Aggregate today's stance across all technical strategies for one symbol.
+
+    Each strategy emits buy(1)/sell(-1)/hold(0) per bar. We track each one's
+    long/flat position to the latest bar, then count:
+      • long_count  — strategies currently holding a long position
+      • buy_today   — strategies that fired a fresh BUY on the latest bar
+      • sell_today  — strategies that fired a fresh SELL on the latest bar
+      • total       — number of strategies evaluated
+
+    A high long_count / a cluster of buy_today is broad agreement; relying on
+    several strategies rather than one is more robust on choppy small-caps.
+    """
+    long_count = buy_today = sell_today = total = 0
+    for cls in REGISTRY.values():
+        try:
+            sig = cls().generate_signals(df)
+        except Exception:
+            continue
+        if len(sig) == 0:
+            continue
+        total += 1
+        pos = 0
+        for s in sig:
+            if s == 1:
+                pos = 1
+            elif s == -1:
+                pos = 0
+        long_count += pos
+        if sig[-1] == 1:
+            buy_today += 1
+        elif sig[-1] == -1:
+            sell_today += 1
+    return {
+        "long_count": long_count,
+        "total":      total,
+        "buy_today":  buy_today,
+        "sell_today": sell_today,
+    }
+
+
 def screen_candidates(
     symbols:   list[str],
     db_path:   str = "data/market.duckdb",
@@ -105,12 +147,24 @@ def screen_candidates(
         if best is not None:
             cand = best[1]
             cand["hold"] = _hold_flag(cand["is_sharpe"], cand["oos_sharpe"])
+            # Today's buy/sell consensus across all strategies for this symbol
+            try:
+                cons = consensus_signal(store.load(sym, "1d", since=since))
+            except Exception:
+                cons = {"long_count": 0, "total": 0, "buy_today": 0, "sell_today": 0}
+            cand.update({
+                "long_count": cons["long_count"],
+                "strat_total": cons["total"],
+                "buy_today":  cons["buy_today"],
+                "sell_today": cons["sell_today"],
+            })
             rows.append(cand)
 
     if not rows:
         return pd.DataFrame(columns=[
             "symbol", "best_strategy", "is_sharpe", "oos_sharpe", "hold",
             "return_pct", "oos_return_pct", "trades", "n_bars", "equity", "split",
+            "long_count", "strat_total", "buy_today", "sell_today",
         ])
 
     df = pd.DataFrame(rows)
