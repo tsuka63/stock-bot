@@ -39,8 +39,10 @@ def compute_portfolio(holdings: pd.DataFrame, source: str = "yfinance") -> dict:
     'fund') are priced from their NAV (基準価額, per 10,000 units), so a fund's
     market value is units × NAV / 10,000 and `price` shown is NAV-per-unit.
     """
+    from datetime          import date as _date
     from bot.data.fetcher  import DataFetcher
     from bot.holdings.funds import fetch_nav
+    from bot.ranking.screen import consensus_signal
 
     fetcher = DataFetcher(source)
     positions = []
@@ -52,11 +54,13 @@ def compute_portfolio(holdings: pd.DataFrame, source: str = "yfinance") -> dict:
         cost   = float(h["avg_cost"])
         name   = str(h["name"]) or symbol
         atype  = str(h["asset_type"]) if "asset_type" in h and h["asset_type"] else "stock"
+        edate  = str(h["entry_date"]) if "entry_date" in h and h["entry_date"] else ""
 
         # `price` and `cost` are per-share for stocks, per-10,000-口 (基準価額)
         # for funds; `shares` is the share count for stocks, 口数 for funds.
         price   = float("nan")
         mkt_val = float("nan")
+        cons    = None            # consensus signal — stocks only
         if atype == "fund":
             cost_basis = shares / 10_000 * cost
             try:
@@ -69,11 +73,21 @@ def compute_portfolio(holdings: pd.DataFrame, source: str = "yfinance") -> dict:
         else:
             cost_basis = cost * shares
             try:
-                df = fetcher.fetch(symbol, "1d", since=_recent_since())
+                # 2-year history: latest price + today's strategy consensus
+                df = fetcher.fetch(symbol, "1d", since=_two_years_ago())
                 if not df.empty:
                     price   = float(df["close"].iloc[-1])
                     mkt_val = price * shares
+                    cons    = consensus_signal(df)
             except Exception:
+                pass
+
+        # Holding period in days, if an entry date was recorded
+        holding_days = None
+        if edate:
+            try:
+                holding_days = (_date.today() - _date.fromisoformat(edate)).days
+            except ValueError:
                 pass
 
         pnl        = (mkt_val - cost_basis) if mkt_val == mkt_val else float("nan")
@@ -87,6 +101,12 @@ def compute_portfolio(holdings: pd.DataFrame, source: str = "yfinance") -> dict:
             "symbol":     symbol,
             "name":       name,
             "type":       atype,
+            "entry_date": edate,
+            "holding_days": holding_days,
+            "buy_today":  cons["buy_today"]  if cons else None,
+            "sell_today": cons["sell_today"] if cons else None,
+            "long_count": cons["long_count"] if cons else None,
+            "strat_total": cons["total"]     if cons else None,
             "shares":     round(shares, 0) if atype == "fund" else shares,
             "avg_cost":   round(cost, 0),
             "price":      None if price != price else round(price, 0 if atype == "fund" else 2),
@@ -116,6 +136,11 @@ def compute_portfolio(holdings: pd.DataFrame, source: str = "yfinance") -> dict:
 def _recent_since() -> str:
     from datetime import date, timedelta
     return (date.today() - timedelta(days=10)).isoformat()
+
+
+def _two_years_ago() -> str:
+    from datetime import date, timedelta
+    return (date.today() - timedelta(days=730)).isoformat()
 
 
 # ---------------------------------------------------------------------------
@@ -225,14 +250,26 @@ def render_portfolio_html(enc: dict, n_positions: int) -> str:
     for (const p of d.positions) {{
       const pc = p.pnl === null ? '' : cls(p.pnl);
       const unit = p.type === 'fund' ? '口' : '株';
+      // Holding period + today's strategy consensus (stocks only)
+      const hold = p.holding_days === null || p.holding_days === undefined
+                   ? '—' : p.holding_days + '日';
+      let sigCell = '—';
+      if (p.type !== 'fund' && p.strat_total) {{
+        const tot = p.strat_total;
+        let today = '<span class="flat">—</span>';
+        if (p.buy_today > 0)      today = '<span class="up">🟢買い' + p.buy_today + '</span>';
+        else if (p.sell_today > 0) today = '<span class="down">🔴売り' + p.sell_today + '</span>';
+        const gcls = (p.long_count / tot) >= 0.5 ? 'up' : 'flat';
+        sigCell = today + ' <span class="' + gcls + '">' + p.long_count + '/' + tot + '</span>';
+      }}
       rows += `<tr>
         <td class="code">${{p.symbol}}</td><td class="name">${{p.name}}</td>
         <td>${{p.shares.toLocaleString('ja-JP')}}${{unit}}</td>
         <td>${{yen(p.avg_cost)}}</td><td>${{yen(p.price)}}</td>
-        <td>${{yen(p.cost_basis)}}</td><td>${{yen(p.mkt_val)}}</td>
+        <td>${{yen(p.mkt_val)}}</td>
         <td class="${{pc}}">${{p.pnl === null ? '—' : sign(p.pnl)}}</td>
         <td class="${{pc}}">${{p.pnl_pct === null ? '—' : (p.pnl_pct>=0?'+':'')+p.pnl_pct.toFixed(1)+'%'}}</td>
-        <td>${{p.alloc === null ? '—' : p.alloc.toFixed(0)+'%'}}</td></tr>`;
+        <td>${{hold}}</td><td>${{sigCell}}</td></tr>`;
     }}
     document.getElementById('content').innerHTML = `
       <div class="cards">
@@ -243,9 +280,11 @@ def render_portfolio_html(enc: dict, n_positions: int) -> str:
       </div>
       <table><thead><tr>
         <th>コード</th><th>銘柄</th><th>株数</th><th>取得単価</th><th>現在値</th>
-        <th>取得額</th><th>評価額</th><th>損益</th><th>損益率</th><th>配分</th>
+        <th>評価額</th><th>損益</th><th>損益率</th><th>保有</th><th>今日/勢い</th>
       </tr></thead><tbody>${{rows}}</tbody></table>
-      <div class="meta">更新: ${{d.generated}} ／ ${{N_POS}}銘柄 ／ 価格はYahoo Finance</div>`;
+      <div class="meta">更新: ${{d.generated}} ／ ${{N_POS}}銘柄 ／ 価格はYahoo Finance<br>
+        「今日/勢い」= 7戦略中の本日<span class="up">買い</span>/<span class="down">売り</span>シグナル数 と
+        現在ロング状態の戦略数（株のみ）。判断材料としてどうぞ。</div>`;
   }}
 </script>
 </body>

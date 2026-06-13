@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS holdings (
     name       VARCHAR DEFAULT '',
     shares     DOUBLE  NOT NULL,   -- stocks: share count; funds: units (口)
     avg_cost   DOUBLE  NOT NULL,   -- cost per share / per 1 口
-    asset_type VARCHAR DEFAULT 'stock'   -- 'stock' | 'fund'
+    asset_type VARCHAR DEFAULT 'stock',  -- 'stock' | 'fund'
+    entry_date VARCHAR DEFAULT ''        -- ISO date the position was opened
 );
 """
 
@@ -32,10 +33,12 @@ class HoldingsStore:
         self.db_path = db_path
         with self._connect() as conn:
             conn.execute(_SCHEMA)
-            # Migrate older tables that predate the asset_type column
+            # Migrate older tables that predate newer columns
             cols = [r[1] for r in conn.execute("PRAGMA table_info('holdings')").fetchall()]
             if "asset_type" not in cols:
                 conn.execute("ALTER TABLE holdings ADD COLUMN asset_type VARCHAR DEFAULT 'stock'")
+            if "entry_date" not in cols:
+                conn.execute("ALTER TABLE holdings ADD COLUMN entry_date VARCHAR DEFAULT ''")
 
     def _connect(self) -> duckdb.DuckDBPyConnection:
         return duckdb.connect(self.db_path)
@@ -47,14 +50,15 @@ class HoldingsStore:
         avg_cost: float,
         name: str = "",
         asset_type: str = "stock",
+        entry_date: str = "",
     ) -> None:
         """Insert or update a holding (full overwrite of that symbol's row)."""
         with self._connect() as conn:
             conn.execute("DELETE FROM holdings WHERE symbol = ?", [symbol])
             conn.execute(
-                "INSERT INTO holdings (symbol, name, shares, avg_cost, asset_type) "
-                "VALUES (?, ?, ?, ?, ?)",
-                [symbol, name, float(shares), float(avg_cost), asset_type],
+                "INSERT INTO holdings (symbol, name, shares, avg_cost, asset_type, entry_date) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                [symbol, name, float(shares), float(avg_cost), asset_type, entry_date],
             )
 
     def remove(self, symbol: str) -> int:
@@ -66,7 +70,8 @@ class HoldingsStore:
     def list_all(self) -> pd.DataFrame:
         with self._connect() as conn:
             return conn.execute(
-                "SELECT symbol, name, shares, avg_cost, asset_type FROM holdings ORDER BY symbol"
+                "SELECT symbol, name, shares, avg_cost, asset_type, entry_date "
+                "FROM holdings ORDER BY symbol"
             ).df()
 
     def clear(self) -> None:
