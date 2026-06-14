@@ -56,6 +56,7 @@ def compute_portfolio(holdings: pd.DataFrame, source: str = "yfinance") -> dict:
         atype  = str(h["asset_type"]) if "asset_type" in h and h["asset_type"] else "stock"
         edate  = str(h["entry_date"]) if "entry_date" in h and h["entry_date"] else ""
         mval   = float(h["manual_value"]) if "manual_value" in h and h["manual_value"] else 0.0
+        cur    = str(h["currency"]) if "currency" in h and h["currency"] else "JPY"
 
         # `price` and `cost` are per-share for stocks, per-10,000-口 (基準価額)
         # for funds; `shares` is the share count for stocks, 口数 for funds.
@@ -79,12 +80,15 @@ def compute_portfolio(holdings: pd.DataFrame, source: str = "yfinance") -> dict:
         else:
             cost_basis = cost * shares
             try:
-                # 2-year history: latest price + today's strategy consensus
+                # 2-year history: latest price + today's strategy consensus.
+                # Non-JPY prices are FX-converted so the whole book is in yen.
                 df = fetcher.fetch(symbol, "1d", since=_two_years_ago())
                 if not df.empty:
-                    price   = float(df["close"].iloc[-1])
+                    fx      = _fx_to_jpy(cur)
+                    price   = float(df["close"].iloc[-1]) * fx   # JPY-equivalent/share
                     mkt_val = price * shares
-                    cons    = consensus_signal(df)
+                    if len(df) >= 60:        # need history before signals mean anything
+                        cons = consensus_signal(df)
             except Exception:
                 pass
 
@@ -147,6 +151,22 @@ def _recent_since() -> str:
 def _two_years_ago() -> str:
     from datetime import date, timedelta
     return (date.today() - timedelta(days=730)).isoformat()
+
+
+def _fx_to_jpy(currency: str) -> float:
+    """Latest FX rate to convert one unit of `currency` into yen (1.0 for JPY)."""
+    if not currency or currency.upper() == "JPY":
+        return 1.0
+    import yfinance as yf
+    cur  = currency.upper()
+    pair = "JPY=X" if cur == "USD" else f"{cur}JPY=X"   # 'JPY=X' is USD/JPY
+    try:
+        hist = yf.Ticker(pair).history(period="5d", auto_adjust=True)
+        if not hist.empty:
+            return float(hist["Close"].iloc[-1])
+    except Exception:
+        pass
+    return 1.0
 
 
 # ---------------------------------------------------------------------------

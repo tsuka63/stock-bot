@@ -22,7 +22,8 @@ CREATE TABLE IF NOT EXISTS holdings (
     avg_cost     DOUBLE  NOT NULL,   -- cost per share / per 1 口
     asset_type   VARCHAR DEFAULT 'stock',  -- 'stock' | 'fund' | 'manual'
     entry_date   VARCHAR DEFAULT '',        -- ISO date the position was opened
-    manual_value DOUBLE  DEFAULT 0           -- current valuation for 'manual' assets
+    manual_value DOUBLE  DEFAULT 0,          -- current valuation for 'manual' assets
+    currency     VARCHAR DEFAULT 'JPY'       -- price currency; non-JPY is FX-converted
 );
 """
 
@@ -42,6 +43,8 @@ class HoldingsStore:
                 conn.execute("ALTER TABLE holdings ADD COLUMN entry_date VARCHAR DEFAULT ''")
             if "manual_value" not in cols:
                 conn.execute("ALTER TABLE holdings ADD COLUMN manual_value DOUBLE DEFAULT 0")
+            if "currency" not in cols:
+                conn.execute("ALTER TABLE holdings ADD COLUMN currency VARCHAR DEFAULT 'JPY'")
 
     def _connect(self) -> duckdb.DuckDBPyConnection:
         return duckdb.connect(self.db_path)
@@ -55,15 +58,16 @@ class HoldingsStore:
         asset_type: str = "stock",
         entry_date: str = "",
         manual_value: float = 0.0,
+        currency: str = "JPY",
     ) -> None:
         """Insert or update a holding (full overwrite of that symbol's row)."""
         with self._connect() as conn:
             conn.execute("DELETE FROM holdings WHERE symbol = ?", [symbol])
             conn.execute(
                 "INSERT INTO holdings (symbol, name, shares, avg_cost, asset_type, "
-                "entry_date, manual_value) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                "entry_date, manual_value, currency) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 [symbol, name, float(shares), float(avg_cost), asset_type,
-                 entry_date, float(manual_value)],
+                 entry_date, float(manual_value), currency],
             )
 
     def remove(self, symbol: str) -> int:
@@ -75,8 +79,8 @@ class HoldingsStore:
     def list_all(self) -> pd.DataFrame:
         with self._connect() as conn:
             return conn.execute(
-                "SELECT symbol, name, shares, avg_cost, asset_type, entry_date, manual_value "
-                "FROM holdings ORDER BY symbol"
+                "SELECT symbol, name, shares, avg_cost, asset_type, entry_date, "
+                "manual_value, currency FROM holdings ORDER BY symbol"
             ).df()
 
     def clear(self) -> None:

@@ -549,6 +549,7 @@ def holdings(
     shares:   Optional[float] = typer.Option(None,  help="Share count (for 'set')"),
     cost:     Optional[float] = typer.Option(None,  help="Average cost per share (for 'set')"),
     date:     str             = typer.Option("",    help="Entry date YYYY-MM-DD (for 'set')"),
+    currency: str             = typer.Option("JPY", help="Price currency for 'set' (e.g. USD for US stocks)"),
     value:    Optional[float] = typer.Option(None,  help="Current valuation in yen (for 'set-fund')"),
     gain:     Optional[float] = typer.Option(None,  help="Unrealized gain in yen (for 'set-fund')"),
     out:      str             = typer.Option("data/portfolio.html", help="Output HTML path (for 'report')"),
@@ -570,9 +571,11 @@ def holdings(
         if not symbol or shares is None or cost is None:
             console.print("[red]set requires --symbol, --shares and --cost.[/]")
             raise typer.Exit(1)
-        store.set(symbol, shares, cost, name=name, asset_type="stock", entry_date=date)
+        store.set(symbol, shares, cost, name=name, asset_type="stock",
+                  entry_date=date, currency=currency)
         dstr = f" (取得日 {date})" if date else ""
-        console.print(f"[green]Saved[/] {symbol}: {shares:g} shares @ ¥{cost:,.0f}{dstr}")
+        cstr = f" [{currency}建て]" if currency != "JPY" else ""
+        console.print(f"[green]Saved[/] {symbol}: {shares:g} shares @ ¥{cost:,.0f}{dstr}{cstr}")
         action = "list"   # fall through to show the book
 
     elif action == "set-fund":
