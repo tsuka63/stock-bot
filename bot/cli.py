@@ -598,6 +598,25 @@ def holdings(
         )
         action = "list"
 
+    elif action == "set-manual":
+        # Manually-valued asset (e.g. private/pre-IPO shares like SpaceX) that
+        # has no public price feed. Value is stored as-is; update it by hand.
+        if not symbol or value is None:
+            console.print("[red]set-manual requires --symbol and --value (current valuation).[/]")
+            raise typer.Exit(1)
+        g = gain or 0.0
+        cost_basis = value - g                       # gain = value - cost
+        n_sh       = shares if shares is not None else 1.0
+        per_share  = cost_basis / n_sh if n_sh else cost_basis
+        store.set(symbol, n_sh, per_share, name=name or symbol,
+                  asset_type="manual", entry_date=date, manual_value=value)
+        console.print(
+            f"[green]Saved manual[/] {name or symbol}: {n_sh:g}株 "
+            f"(取得 ¥{cost_basis:,.0f} / 評価 ¥{value:,.0f} / 損益 ¥{g:+,.0f})"
+        )
+        console.print("[dim]※ 自動更新されません。評価額が変わったら再度 set-manual で更新してください。[/]")
+        action = "list"
+
     elif action == "remove":
         if not symbol:
             console.print("[red]remove requires --symbol.[/]")

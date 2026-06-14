@@ -55,13 +55,19 @@ def compute_portfolio(holdings: pd.DataFrame, source: str = "yfinance") -> dict:
         name   = str(h["name"]) or symbol
         atype  = str(h["asset_type"]) if "asset_type" in h and h["asset_type"] else "stock"
         edate  = str(h["entry_date"]) if "entry_date" in h and h["entry_date"] else ""
+        mval   = float(h["manual_value"]) if "manual_value" in h and h["manual_value"] else 0.0
 
         # `price` and `cost` are per-share for stocks, per-10,000-口 (基準価額)
         # for funds; `shares` is the share count for stocks, 口数 for funds.
         price   = float("nan")
         mkt_val = float("nan")
         cons    = None            # consensus signal — stocks only
-        if atype == "fund":
+        if atype == "manual":
+            # No public price feed (e.g. SpaceX): use the stored valuation as-is
+            cost_basis = cost * shares
+            mkt_val    = mval
+            price      = mval / shares if shares else float("nan")
+        elif atype == "fund":
             cost_basis = shares / 10_000 * cost
             try:
                 nav = fetch_nav(symbol)          # 基準価額, per 10,000 口
@@ -109,7 +115,7 @@ def compute_portfolio(holdings: pd.DataFrame, source: str = "yfinance") -> dict:
             "strat_total": cons["total"]     if cons else None,
             "shares":     round(shares, 0) if atype == "fund" else shares,
             "avg_cost":   round(cost, 0),
-            "price":      None if price != price else round(price, 0 if atype == "fund" else 2),
+            "price":      None if price != price else round(price, 0 if atype in ("fund", "manual") else 2),
             "cost_basis": round(cost_basis, 0),
             "mkt_val":    None if mkt_val != mkt_val else round(mkt_val, 0),
             "pnl":        None if pnl != pnl else round(pnl, 0),
