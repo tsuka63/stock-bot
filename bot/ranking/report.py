@@ -187,14 +187,24 @@ def _render_screen_section(screen_df: pd.DataFrame) -> str:
 """
 
 
+def _limit_badge(status: str) -> str:
+    if status == "high":
+        return '<span class="lim-high">🔼 S高</span>'
+    if status == "low":
+        return '<span class="lim-low">🔽 S安</span>'
+    return '<span class="flat">買える</span>'
+
+
 def render_candidates_html(
     df: pd.DataFrame,
     history_dates: list[str],
     top_n: int,
     min_days: int,
     screen_df: pd.DataFrame | None = None,
+    limit_status: dict[str, str] | None = None,
 ) -> str:
     """Build the full HTML document string for the candidate table."""
+    limit_status = limit_status or {}
     # Always report in JST — GitHub's runners are UTC, which would otherwise
     # show the wrong day/time to a Japanese user.
     jst       = timezone(timedelta(hours=9))
@@ -205,12 +215,15 @@ def render_candidates_html(
         if history_dates else "データなし"
     )
 
+    _LIM_SORT = {"high": 2, "low": 1, "normal": 0}
     rows_html = []
     for _, r in df.iterrows():
+        st = limit_status.get(str(r["symbol"]), "normal")
         rows_html.append(
             "<tr>"
             f'<td class="code">{escape(str(r["symbol"]))}</td>'
             f'<td class="name">{escape(str(r["name"]) or "—")}</td>'
+            f'<td data-sort="{_LIM_SORT.get(st, 0)}">{_limit_badge(st)}</td>'
             f'<td class="{_score_class(r["score"])}" data-sort="{r["score"]}">'
             f'{r["score"]:.0f}</td>'
             f'<td data-sort="{int(r["streak"])}">{int(r["streak"])}日</td>'
@@ -222,7 +235,7 @@ def render_candidates_html(
             "</tr>"
         )
     tbody = "\n".join(rows_html) if rows_html else (
-        '<tr><td colspan="9" class="empty">'
+        '<tr><td colspan="10" class="empty">'
         f'候補なし（上位{top_n}位・{min_days}日以上）。'
         'データが溜まると表示されます。</td></tr>'
     )
@@ -245,6 +258,8 @@ def render_candidates_html(
   .hold-ok   {{ color: #34d399; font-weight: 700; }}
   .hold-weak {{ color: #fbbf24; font-weight: 700; }}
   .hold-bad  {{ color: #f87171; font-weight: 700; }}
+  .lim-high  {{ color: #f87171; font-weight: 700; }}
+  .lim-low   {{ color: #6db3f2; font-weight: 700; }}
   .legend {{ font-size: 12px; color: #8a93a2; margin: 12px 0 18px; line-height: 1.6; }}
   table {{ border-collapse: collapse; width: 100%; font-size: 14px; }}
   th, td {{ padding: 8px 10px; text-align: right; border-bottom: 1px solid #232733; }}
@@ -277,22 +292,25 @@ def render_candidates_html(
     <thead><tr>
       <th data-i="0">コード</th>
       <th data-i="1">銘柄</th>
-      <th data-i="2">スコア ▼</th>
-      <th data-i="3">連続</th>
-      <th data-i="4">登場</th>
-      <th data-i="5">平均順位</th>
-      <th data-i="6">最高</th>
-      <th data-i="7">推移</th>
-      <th data-i="8">種別</th>
+      <th data-i="2">状態</th>
+      <th data-i="3">スコア ▼</th>
+      <th data-i="4">連続</th>
+      <th data-i="5">登場</th>
+      <th data-i="6">平均順位</th>
+      <th data-i="7">最高</th>
+      <th data-i="8">推移</th>
+      <th data-i="9">種別</th>
     </tr></thead>
     <tbody>
 {tbody}
     </tbody>
   </table>
   <div class="legend">
+    <b>状態</b> <span class="lim-high">🔼 S高</span>=ストップ高（買い注文が殺到し<b>買えないことが多い</b>） ／
+    <span class="lim-low">🔽 S安</span>=ストップ安（売れないことが多い） ／ 買える=通常。
+    最新の終値ベース、翌日の寄りで変わることあり。<br>
     <b>スコア</b> = 継続性(30) + 複数ランキング登場の幅(25) + 順位の高さ(25) + 順位上昇トレンド(20)<br>
-    <b>推移</b> ▲ = ランキング順位が上昇中（注目度が高まっている） ／ ▼ = 下降中<br>
-    列ヘッダーをクリックすると並べ替えできます。
+    <b>推移</b> ▲ = ランキング順位が上昇中 ／ ▼ = 下降中。列ヘッダーをクリックで並べ替え。
   </div>
 {screen_section}
 <script>
@@ -326,8 +344,11 @@ def save_candidates_html(
     top_n: int = 50,
     min_days: int = 3,
     screen_df: pd.DataFrame | None = None,
+    limit_status: dict[str, str] | None = None,
 ) -> str:
-    html = render_candidates_html(df, history_dates, top_n, min_days, screen_df)
+    html = render_candidates_html(
+        df, history_dates, top_n, min_days, screen_df, limit_status
+    )
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(html)
     return out_path

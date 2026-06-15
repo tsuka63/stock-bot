@@ -79,6 +79,7 @@ try:
     dates = tracker.available_dates()
 
     screen_df = None
+    limit_status = {}
     if not df.empty:
         top_syms = list(df["symbol"].astype(str).head(SCREEN_N))
         console.print(f"  Screening {len(top_syms)} candidates (fetch + backtest + OOS) …")
@@ -87,10 +88,15 @@ try:
             console.print(f"  Screened {len(screen_df)} symbols")
         except Exception as exc:
             console.print(f"  [yellow]screen failed: {exc}[/]")
+        try:
+            from bot.ranking.limit import fetch_limit_status
+            limit_status = fetch_limit_status(list(df["symbol"].astype(str)))
+        except Exception as exc:
+            console.print(f"  [yellow]limit status failed: {exc}[/]")
 
     out = save_candidates_html(
         df, dates, str(PROJECT_DIR / "data" / "candidates.html"),
-        top_n=TOP_N, min_days=MIN_DAYS, screen_df=screen_df,
+        top_n=TOP_N, min_days=MIN_DAYS, screen_df=screen_df, limit_status=limit_status,
     )
     console.print(f"  Report → {out} ({len(df)} candidates)")
 

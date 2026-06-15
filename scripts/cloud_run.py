@@ -36,6 +36,7 @@ def main() -> int:
     from bot.ranking.tracker import RankingTracker
     from bot.ranking.report  import save_candidates_html
     from bot.ranking.screen  import screen_candidates
+    from bot.ranking.limit   import fetch_limit_status
 
     Path(OUT).parent.mkdir(parents=True, exist_ok=True)
     tracker = RankingTracker(DB_PATH)
@@ -59,6 +60,7 @@ def main() -> int:
     dates = tracker.available_dates()
 
     screen_df = None
+    limit_status = {}
     if not df.empty:
         top_syms = list(df["symbol"].astype(str).head(SCREEN_N))
         console.print(f"  Screening {len(top_syms)} candidates (yfinance + backtest + OOS) …")
@@ -68,7 +70,16 @@ def main() -> int:
         except Exception as exc:
             console.print(f"  [yellow]screen failed: {exc}[/]")
 
-    save_candidates_html(df, dates, OUT, top_n=TOP_N, min_days=MIN_DAYS, screen_df=screen_df)
+        # ストップ高/安 status for every candidate shown
+        try:
+            limit_status = fetch_limit_status(list(df["symbol"].astype(str)))
+            n_high = sum(1 for v in limit_status.values() if v == "high")
+            console.print(f"  Limit status: {len(limit_status)} checked, {n_high} ストップ高")
+        except Exception as exc:
+            console.print(f"  [yellow]limit status failed: {exc}[/]")
+
+    save_candidates_html(df, dates, OUT, top_n=TOP_N, min_days=MIN_DAYS,
+                         screen_df=screen_df, limit_status=limit_status)
     console.print(f"  Report → {OUT} ({len(df)} candidates)")
     return 0
 
