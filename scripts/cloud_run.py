@@ -81,6 +81,19 @@ def main() -> int:
     save_candidates_html(df, dates, OUT, top_n=TOP_N, min_days=MIN_DAYS,
                          screen_df=screen_df, limit_status=limit_status)
     console.print(f"  Report → {OUT} ({len(df)} candidates)")
+
+    # 4-type valuation matrix for a fixed universe → docs/value.html
+    try:
+        from bot.valuation.classify import analyze
+        from bot.valuation.report   import save_valuation_html
+        from bot.universes          import UNIVERSES
+        vres = analyze(UNIVERSES["n225"])
+        vout = str(PROJECT_DIR / "docs" / "value.html")
+        save_valuation_html(vres, vout, title="株の4タイプ分析（日経225主要20銘柄）")
+        console.print(f"  Valuation → {vout} ({len(vres)} stocks)")
+    except Exception as exc:
+        console.print(f"  [yellow]valuation failed: {exc}[/]")
+
     return 0
 
 

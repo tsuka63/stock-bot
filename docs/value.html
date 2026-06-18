@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>株の4タイプ分析（日経225主要20銘柄） — 2026-06-18 13:54</title>
+<style>
+  body { font-family:-apple-system,"Hiragino Sans",sans-serif; background:#0f1115;
+         color:#e6e6e6; padding:24px; }
+  a { color:#6db3f2; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .meta { color:#8a93a2; font-size:13px; margin-bottom:18px; }
+  .matrix { display:grid; grid-template-columns:64px 1fr 1fr; grid-template-rows:auto 1fr 1fr;
+             gap:8px; max-width:900px; margin-bottom:8px; }
+  .axis { display:flex; align-items:center; justify-content:center; color:#8a93a2;
+           font-size:12px; text-align:center; }
+  .axis.v { writing-mode:vertical-rl; }
+  .quad { background:#161a22; border:1px solid; border-radius:10px; padding:10px 12px; min-height:120px; }
+  .quad-h { font-weight:700; font-size:14px; margin-bottom:8px; }
+  .quad-style { color:#8a93a2; font-weight:400; font-size:11px; margin-left:6px; }
+  .chips { display:flex; flex-wrap:wrap; gap:5px; }
+  .chip { background:#0f1115; border:1px solid #2c3340; border-radius:6px;
+           padding:2px 7px; font-size:12px; }
+  .chip b { color:#6db3f2; }
+  .chip.empty { color:#555; border-style:dashed; }
+  table { border-collapse:collapse; width:100%; font-size:14px; margin-top:18px; max-width:900px; }
+  th,td { padding:8px 12px; border-bottom:1px solid #232733; text-align:right; }
+  th { color:#b8c0cc; background:#161a22; cursor:pointer; user-select:none; }
+  td.code { text-align:left; font-weight:700; color:#6db3f2; }
+  td.name { text-align:left; }
+  .legend { color:#8a93a2; font-size:12px; margin-top:14px; line-height:1.7; max-width:900px; }
+</style>
+</head>
+<body>
+  <h1>📊 株の4タイプ分析（日経225主要20銘柄）</h1>
+  <div class="meta">🕒 最終更新: 2026-06-18 13:54（JST） ／ 20銘柄 ／
+    <a href="index.html">← 株ランキングへ</a></div>
+
+  <div class="matrix">
+    <div class="axis"></div>
+    <div class="axis">低成長 ←</div>
+    <div class="axis">→ 高成長</div>
+    <div class="axis v">高PBR・高PER</div>
+    <div class="quad" style="border-color:#a78bfa"><div class="quad-h" style="color:#a78bfa">⚠️ 後退期<span class="quad-style">割高・停滞（注意）</span></div><div class="chips"><div class="chip"><b>6758</b> SONY GROUP COR</div><div class="chip"><b>8306</b> MITSUBISHI UFJ</div><div class="chip"><b>4502</b> TAKEDA PHARMAC</div><div class="chip"><b>6367</b> DAIKIN INDUSTR</div><div class="chip"><b>4063</b> SHIN-ETSU CHEM</div><div class="chip"><b>4661</b> ORIENTAL LAND </div><div class="chip"><b>8316</b> SUMITOMO MITSU</div></div></div>
+    <div class="quad" style="border-color:#f472b6"><div class="quad-h" style="color:#f472b6">🚀 天井<span class="quad-style">グロース株投資</span></div><div class="chips"><div class="chip"><b>9984</b> SOFTBANK GROUP</div><div class="chip"><b>6861</b> KEYENCE CORP</div><div class="chip"><b>9433</b> KDDI CORPORATI</div><div class="chip"><b>7974</b> NINTENDO CO LT</div><div class="chip"><b>8035</b> TOKYO ELECTRON</div><div class="chip"><b>6098</b> RECRUIT HOLDIN</div><div class="chip"><b>7011</b> MITSUBISHI HEA</div><div class="chip"><b>5108</b> BRIDGESTONE CO</div><div class="chip"><b>4519</b> CHUGAI PHARMAC</div></div></div>
+    <div class="axis v">低PBR・低PER</div>
+    <div class="quad" style="border-color:#34d399"><div class="quad-h" style="color:#34d399">💎 どん底<span class="quad-style">資産バリュー投資</span></div><div class="chips"><div class="chip"><b>7751</b> CANON INC</div><div class="chip"><b>7267</b> HONDA MOTOR CO</div></div></div>
+    <div class="quad" style="border-color:#fbbf24"><div class="quad-h" style="color:#fbbf24">🌱 回復期<span class="quad-style">割安成長（妙味）</span></div><div class="chips"><div class="chip"><b>7203</b> TOYOTA MOTOR C</div><div class="chip"><b>6902</b> DENSO CORP</div></div></div>
+  </div>
+
+  <table id="t">
+    <thead><tr>
+      <th data-i="0">コード</th><th data-i="1">銘柄</th>
+      <th data-i="2">PER</th><th data-i="3">PBR</th>
+      <th data-i="4">成長率</th><th data-i="5">タイプ</th>
+    </tr></thead>
+    <tbody>
+<tr><td class="code">7203</td><td class="name">TOYOTA MOTOR CORP</td><td data-sort="9.444952">9.44</td><td data-sort="0.91059995">0.91</td><td data-sort="0.232">+23%</td><td style="color:#fbbf24;font-weight:700">🌱 回復期</td></tr>
+<tr><td class="code">6902</td><td class="name">DENSO CORP</td><td data-sort="7.4353404">7.44</td><td data-sort="0.93975747">0.94</td><td data-sort="0.69">+69%</td><td style="color:#fbbf24;font-weight:700">🌱 回復期</td></tr>
+<tr><td class="code">7751</td><td class="name">CANON INC</td><td data-sort="11.908522">11.91</td><td data-sort="1.1066417">1.11</td><td data-sort="-0.286">-29%</td><td style="color:#34d399;font-weight:700">💎 どん底</td></tr>
+<tr><td class="code">7267</td><td class="name">HONDA MOTOR CO</td><td data-sort="9999">—</td><td data-sort="0.46328825">0.46</td><td data-sort="0.086">+9%</td><td style="color:#34d399;font-weight:700">💎 どん底</td></tr>
+<tr><td class="code">9984</td><td class="name">SOFTBANK GROUP CORP</td><td data-sort="8.25565">8.26</td><td data-sort="2.3543022">2.35</td><td data-sort="2.607">+261%</td><td style="color:#f472b6;font-weight:700">🚀 天井</td></tr>
+<tr><td class="code">6861</td><td class="name">KEYENCE CORP</td><td data-sort="42.040714">42.04</td><td data-sort="5.3884816">5.39</td><td data-sort="0.254">+25%</td><td style="color:#f472b6;font-weight:700">🚀 天井</td></tr>
+<tr><td class="code">9433</td><td class="name">KDDI CORPORATION</td><td data-sort="14.694823">14.69</td><td data-sort="2.0221221">2.02</td><td data-sort="0.422">+42%</td><td style="color:#f472b6;font-weight:700">🚀 天井</td></tr>
+<tr><td class="code">7974</td><td class="name">NINTENDO CO LTD</td><td data-sort="19.557762">19.56</td><td data-sort="2.7821422">2.78</td><td data-sort="0.571">+57%</td><td style="color:#f472b6;font-weight:700">🚀 天井</td></tr>
+<tr><td class="code">8035</td><td class="name">TOKYO ELECTRON</td><td data-sort="60.890434">60.89</td><td data-sort="16.781145">16.78</td><td data-sort="0.505">+50%</td><td style="color:#f472b6;font-weight:700">🚀 天井</td></tr>
+<tr><td class="code">6098</td><td class="name">RECRUIT HOLDINGS CO LT</td><td data-sort="32.500072">32.50</td><td data-sort="9.951403">9.95</td><td data-sort="0.609">+61%</td><td style="color:#f472b6;font-weight:700">🚀 天井</td></tr>
+<tr><td class="code">7011</td><td class="name">MITSUBISHI HEAVY INDUS</td><td data-sort="37.822105">37.82</td><td data-sort="4.31155">4.31</td><td data-sort="0.651">+65%</td><td style="color:#f472b6;font-weight:700">🚀 天井</td></tr>
+<tr><td class="code">5108</td><td class="name">BRIDGESTONE CORP</td><td data-sort="29.03741">29.04</td><td data-sort="1.1851354">1.19</td><td data-sort="0.302">+30%</td><td style="color:#f472b6;font-weight:700">🚀 天井</td></tr>
+<tr><td class="code">4519</td><td class="name">CHUGAI PHARMACEUTICAL </td><td data-sort="28.57684">28.58</td><td data-sort="6.509847">6.51</td><td data-sort="0.187">+19%</td><td style="color:#f472b6;font-weight:700">🚀 天井</td></tr>
+<tr><td class="code">6758</td><td class="name">SONY GROUP CORPORATION</td><td data-sort="18.82882">18.83</td><td data-sort="2.3466184">2.35</td><td data-sort="-0.575">-57%</td><td style="color:#a78bfa;font-weight:700">⚠️ 後退期</td></tr>
+<tr><td class="code">8306</td><td class="name">MITSUBISHI UFJ FINANCI</td><td data-sort="15.819209">15.82</td><td data-sort="1.702716">1.70</td><td data-sort="-9">—</td><td style="color:#a78bfa;font-weight:700">⚠️ 後退期</td></tr>
+<tr><td class="code">4502</td><td class="name">TAKEDA PHARMACEUTICAL </td><td data-sort="41.923332">41.92</td><td data-sort="1.0179853">1.02</td><td data-sort="0.039">+4%</td><td style="color:#a78bfa;font-weight:700">⚠️ 後退期</td></tr>
+<tr><td class="code">6367</td><td class="name">DAIKIN INDUSTRIES</td><td data-sort="25.28012">25.28</td><td data-sort="2.1355886">2.14</td><td data-sort="0.023">+2%</td><td style="color:#a78bfa;font-weight:700">⚠️ 後退期</td></tr>
+<tr><td class="code">4063</td><td class="name">SHIN-ETSU CHEMICAL CO</td><td data-sort="29.581701">29.58</td><td data-sort="3.1087804">3.11</td><td data-sort="-0.063">-6%</td><td style="color:#a78bfa;font-weight:700">⚠️ 後退期</td></tr>
+<tr><td class="code">4661</td><td class="name">ORIENTAL LAND CO</td><td data-sort="30.3641">30.36</td><td data-sort="3.3688152">3.37</td><td data-sort="-9">—</td><td style="color:#a78bfa;font-weight:700">⚠️ 後退期</td></tr>
+<tr><td class="code">8316</td><td class="name">SUMITOMO MITSUI FINANC</td><td data-sort="16.267897">16.27</td><td data-sort="1.6209418">1.62</td><td data-sort="-9">—</td><td style="color:#a78bfa;font-weight:700">⚠️ 後退期</td></tr>
+    </tbody>
+  </table>
+
+  <div class="legend">
+    <b>4タイプ</b>: 🌱回復期=割安なのに成長中（妙味） ／ 💎どん底=資産バリュー（割安・低成長） ／
+    🚀天井=グロース（割高・高成長） ／ ⚠️後退期=割高なのに停滞（注意）<br>
+    判定: 割高=PBR≥1.5またはPER≥20 ／ 高成長=利益(or売上)成長≥10%。
+    成長データが無い銘柄は低成長扱い。列ヘッダーで並べ替え。
+  </div>
+<script>
+  const table=document.getElementById('t'), tb=table.tBodies[0];
+  let sc=-1, asc=false;
+  table.querySelectorAll('th').forEach(th=>th.addEventListener('click',()=>{
+    const i=+th.dataset.i; asc=(i===sc)?!asc:false; sc=i;
+    [...tb.rows].sort((a,b)=>{
+      const av=a.cells[i].dataset.sort??a.cells[i].textContent;
+      const bv=b.cells[i].dataset.sort??b.cells[i].textContent;
+      const an=parseFloat(av),bn=parseFloat(bv);
+      const c=(!isNaN(an)&&!isNaN(bn))?an-bn:String(av).localeCompare(String(bv));
+      return asc?c:-c;
+    }).forEach(r=>tb.appendChild(r));
+  }));
+</script>
+</body>
+</html>

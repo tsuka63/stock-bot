@@ -287,7 +287,8 @@ def render_candidates_html(
 </head>
 <body>
   <h1>📈 株ランキング候補</h1>
-  <div class="meta">🕒 最終更新: {generated}（JST） ／ データ対象: {span} ／ 条件: 上位{top_n}位・{min_days}日以上</div>
+  <div class="meta">🕒 最終更新: {generated}（JST） ／ データ対象: {span} ／ 条件: 上位{top_n}位・{min_days}日以上
+    ／ <a href="value.html" style="color:#6db3f2">📊 株の4タイプ分析 →</a></div>
   <table id="t">
     <thead><tr>
       <th data-i="0">コード</th>

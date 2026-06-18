@@ -542,6 +542,62 @@ def rank(
 
 
 @app.command()
+def value(
+    symbols:  Optional[str] = typer.Option(None, help="Comma-separated tickers (e.g. 7203,6758)"),
+    universe: Optional[str] = typer.Option(None, help="Universe: tech, sp500, n225, etf, finance, energy"),
+    report:   bool          = typer.Option(False, "--report", help="Also write an HTML report"),
+    out:      str           = typer.Option("data/value.html", help="HTML output path (with --report)"),
+):
+    """Classify stocks into the 4 valuation types (PER/PBR/growth matrix).
+
+    Examples:
+      python -m bot value --symbols 7203,6758,9984
+      python -m bot value --universe n225 --report
+    """
+    from bot.valuation.classify import analyze, TYPES
+    from bot.universes          import UNIVERSES
+    from rich.table import Table
+    from rich       import box
+
+    if symbols:
+        syms = [s.strip() for s in symbols.split(",") if s.strip()]
+    elif universe:
+        if universe not in UNIVERSES:
+            console.print(f"[red]Unknown universe '{universe}'. Available: {list(UNIVERSES)}[/]")
+            raise typer.Exit(1)
+        syms = UNIVERSES[universe]
+    else:
+        console.print("[red]Provide --symbols or --universe.[/]")
+        raise typer.Exit(1)
+
+    with console.status(f"Fetching fundamentals for {len(syms)} stock(s) …"):
+        results = analyze(syms)
+
+    _COLOR = {"recovery": "yellow", "bottom": "green", "ceiling": "magenta",
+              "decline": "red", "unknown": "dim"}
+    order = {"recovery": 0, "bottom": 1, "ceiling": 2, "decline": 3, "unknown": 4}
+    results.sort(key=lambda r: order.get(r["type"], 9))
+
+    tbl = Table(title="株の4タイプ分析", box=box.SIMPLE_HEAVY)
+    for c in ("Code", "Name", "PER", "PBR", "成長", "タイプ"):
+        tbl.add_column(c, justify="right" if c not in ("Code", "Name", "タイプ") else "left")
+    for r in results:
+        label, style, emoji = TYPES[r["type"]]
+        per = f"{r['per']:.1f}" if r["per"] is not None else "—"
+        pbr = f"{r['pbr']:.2f}" if r["pbr"] is not None else "—"
+        g   = f"{r['growth']*100:+.0f}%" if r["growth"] is not None else "—"
+        tbl.add_row(r["symbol"], str(r["name"])[:18], per, pbr, g,
+                    f"[{_COLOR[r['type']]}]{emoji}{label}[/]")
+    console.print(tbl)
+    console.print("[dim]🌱回復期=割安成長 💎どん底=資産バリュー 🚀天井=グロース ⚠️後退期=割高停滞[/]")
+
+    if report:
+        from bot.valuation.report import save_valuation_html
+        path = save_valuation_html(results, out)
+        console.print(f"[green]HTML →[/] {path}")
+
+
+@app.command()
 def holdings(
     action:   str = typer.Argument("list", help="Action: list | set | set-fund | remove | report"),
     symbol:   Optional[str]   = typer.Option(None,  help="Ticker (e.g. 7203) or fund code (e.g. 0331418A)"),
