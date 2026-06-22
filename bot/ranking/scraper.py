@@ -20,15 +20,24 @@ _BASE   = "https://finance.yahoo.co.jp/stocks/ranking"
 _PARAMS = {"market": "tokyo", "term": "daily", "category": "stock"}
 
 
-def _get(path: str) -> str:
-    resp = requests.get(
-        f"{_BASE}/{path}",
-        params=_PARAMS,
-        headers={"User-Agent": _UA},
-        timeout=15,
-    )
-    resp.raise_for_status()
-    return resp.text
+def _get(path: str, retries: int = 3) -> str:
+    import time
+    last = None
+    for i in range(retries):
+        try:
+            resp = requests.get(
+                f"{_BASE}/{path}",
+                params=_PARAMS,
+                headers={"User-Agent": _UA},
+                timeout=15,
+            )
+            resp.raise_for_status()
+            return resp.text
+        except Exception as exc:
+            last = exc
+            if i < retries - 1:
+                time.sleep(2 * (i + 1))
+    raise last
 
 
 def _parse_standard(html: str) -> list[dict]:

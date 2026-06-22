@@ -44,6 +44,14 @@ def main() -> int:
     console.print(f"[{TODAY}] Scraping Yahoo Finance Japan rankings …")
     rankings = fetch_all(delay=1.5)
 
+    # Health check: an empty scrape means Yahoo likely changed its page
+    # structure. Fail loudly (GitHub alerts) and keep the last good data.
+    total_scraped = sum(len(v) for v in rankings.values())
+    if total_scraped == 0:
+        console.print("  [red][ERROR] 0 rankings scraped — Yahoo structure may have "
+                      "changed. Keeping last good data.[/]")
+        return 1
+
     # Holiday / stale guard: skip storing a duplicate of the last session
     stale_of = tracker.matches_last_snapshot(rankings, exclude_date=TODAY)
     if stale_of:
